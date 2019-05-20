@@ -1,16 +1,22 @@
 const path = require('path');
+const webpack = require('webpack');
 const UglifyPlugin = require('uglifyjs-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin');
 
 module.exports = {
 	// 入口
-	entry: './src/index.js',
+	entry: {
+		index: './src/index.js',
+		demo: './src/demo/demo.js',
+		threeDemo: './src/threeDemo/threeDemo.js'
+	},
 
 	// 出口
 	output: {
 		path: path.resolve(__dirname, 'dist'), // 解析当前文件夹名称/dist
-		filename: 'bundle.js',
+		filename: '[name].bundle.[hash].js',   // 划分chunk，设置hash
 	},
 
 	// 模块
@@ -51,14 +57,20 @@ module.exports = {
 					},
 				],
 			},
+			{
+				test: /\.(vert|frag|geom)$/,
+				use: 'raw-loader'
+			}
 		],
 	},
 
 	// 代码模块路径解析
 	resolve: {
 		modules: ['node_modules', path.resolve(__dirname, 'src')],
-
 		extensions: ['.wasm', '.mjs', '.js', '.json', '.jsx'],
+		alias: {
+			configs$: path.resolve(__dirname, 'src/configs/'),  // 精确匹配的全局别名
+		},
 	},
 
 	plugins: [
@@ -66,7 +78,26 @@ module.exports = {
 		new HtmlWebpackPlugin({
 			filename: 'index.html', // 输出文件名和路径
 			template: 'assets/index.html', // 配置文件模板
+			chunks: ['index'],
+		}),
+		new HtmlWebpackPlugin({
+			filename: 'demo.html', // 输出文件名和路径
+			template: 'src/demo/demo.html', // 配置文件模板
+			chunks: ['demo'],
+		}),
+		new HtmlWebpackPlugin({
+			filename: 'threeDemo.html',
+			template: 'src/threeDemo/threeDemo.html',
+			chunks: ['threeDemo'],
 		}),
 		new ExtractTextPlugin('index.css'),
+		new webpack.HotModuleReplacementPlugin(),	// 启动模块热替换
+		new webpack.NamedModulesPlugin(),			// 启动模块热替换时显示模块的相对路径
+		new FriendlyErrorsWebpackPlugin()
 	],
+
+	devServer: {
+		hot: true, // 开启热重载
+		quiet: true // 不产生输出，让friendlyError插件来做
+	},
 };
